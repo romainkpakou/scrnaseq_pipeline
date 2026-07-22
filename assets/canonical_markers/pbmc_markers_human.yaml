@@ -1,0 +1,40 @@
+# ============================================================================
+# Marqueurs canoniques pour l'annotation PBMC - Humain
+# Sources : tutoriel Seurat PBMC 3k, litterature immunologique
+# ============================================================================
+
+CD4 T naive:
+  markers: [CCR7, LEF1, TCF7, IL7R, MAL]
+  description: "Lymphocytes T CD4+ naifs, quiescents, circulants"
+
+CD14+ Mono:
+  markers: [CD14, LYZ, S100A9, S100A8, FOLR3]
+  description: "Monocytes classiques, immunite innee"
+
+CD4 T memory:
+  markers: [IL7R, AQP3, CD40LG, CD2, TRAT1]
+  description: "Lymphocytes T CD4+ memoires, actives"
+
+B:
+  markers: [CD79A, MS4A1, TCL1A, VPREB3, FCRLA]
+  description: "Lymphocytes B"
+
+CD8 T:
+  markers: [CD8A, GZMK, GZMH, CCL5, KLRG1]
+  description: "Lymphocytes T CD8+ cytotoxiques"
+
+FCGR3A+ Mono:
+  markers: [FCGR3A, MS4A7, CDKN1C, MS4A4A, HES4]
+  description: "Monocytes non classiques, surveillance vasculaire"
+
+NK:
+  markers: [GNLY, GZMB, NKG7, SPON2, AKR1C3]
+  description: "Cellules Natural Killer"
+
+DC:
+  markers: [FCER1A, CLEC10A, CLIC2, SERPINF1, ENHO]
+  description: "Cellules dendritiques conventionnelles type 2 (cDC2)"
+
+Platelet:
+  markers: [PPBP, PF4, ITGA2B, GP9, LY6G6F]
+  description: "Plaquettes / megacaryocytes"
