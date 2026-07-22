@@ -17,3 +17,12 @@ pca:
   n_dims: 50
   n_pcs_selected: 10
   jackstraw: false
+
+clustering:
+  resolution: 0.5
+  algorithm: 1
+
+umap:
+  n_neighbors: 30
+  min_dist: 0.3
+  canonical_markers: [CD3D, CD8A, IL7R, MS4A1, CD79A, GNLY, NKG7, CD14, FCGR3A, LYZ, PPBP, FCER1A]
