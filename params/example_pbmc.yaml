@@ -12,3 +12,8 @@ normalization:
   method: "LogNormalize"
   scale_factor: 10000
   n_hvg: 2000
+
+pca:
+  n_dims: 50
+  n_pcs_selected: 10
+  jackstraw: false
