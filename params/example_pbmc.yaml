@@ -1,0 +1,14 @@
+# Configuration PBMC 3k - Module QC
+project_name: "pbmc3k_analysis"
+species: "human"
+
+qc:
+  min_features: 200
+  max_features: 2500
+  max_mt_percent: 5
+  min_cells_per_gene: 3
+
+normalization:
+  method: "LogNormalize"
+  scale_factor: 10000
+  n_hvg: 2000
