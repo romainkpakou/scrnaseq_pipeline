@@ -172,13 +172,15 @@ workflow {
 
     if (analysis_cfg.report) {
 
-        template = file("${projectDir}/assets/report_template.Rmd")
+        template   = file("${projectDir}/assets/report_template.Rmd")
+        tex_header = file("${projectDir}/assets/report_header.tex")
 
         GENERATE_REPORT(all_figures.collect(),
                         all_tables.collect(),
                         all_logs.collect(),
                         config_file,
                         template,
+                        tex_header,
                         bin_report)
     }
 }

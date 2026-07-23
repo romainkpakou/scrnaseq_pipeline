@@ -122,18 +122,52 @@ file.copy(opt$template, work_rmd, overwrite = TRUE)
 # quiet supprime la sortie verbeuse de pandoc, qui saturerait le journal
 # Nextflow sans apporter d'information exploitable.
 
-rmarkdown::render(
-  input       = work_rmd,
-  output_file = opt$output_html,
-  output_dir  = getwd(),
-  params = list(
-    config = opt$config,
-    title  = if (!is.null(rep$title))  rep$title  else "Analyse single-cell RNA-seq",
-    author = if (!is.null(rep$author)) rep$author else "scrnaseq_pipeline"
-  ),
-  envir = new.env(),
-  quiet = TRUE
+# Parametres transmis au template, communs aux deux formats de sortie.
+render_params <- list(
+  config = opt$config,
+  title  = if (!is.null(rep$title))  rep$title  else "Analyse single-cell RNA-seq",
+  author = if (!is.null(rep$author)) rep$author else "scrnaseq_pipeline"
 )
+
+# --- Rendu HTML : livrable principal, toujours produit ---
+rmarkdown::render(
+  input         = work_rmd,
+  output_format = "html_document",
+  output_file   = opt$output_html,
+  output_dir    = getwd(),
+  params        = render_params,
+  envir         = new.env(),
+  quiet         = TRUE
+)
+
+# --- Rendu PDF : format secondaire, active depuis la configuration ---
+# Le PDF n'est pas produit systematiquement : sa generation ajoute plusieurs
+# dizaines de secondes et requiert une distribution LaTeX, dependance lourde
+# que tous les environnements ne fournissent pas.
+#
+# L'echec du rendu PDF n'interrompt pas le module. Le rapport HTML est deja
+# produit a ce stade, et une erreur LaTeX ne doit pas invalider une execution
+# de pipeline par ailleurs reussie. L'incident est journalise.
+pdf_done <- FALSE
+
+if (isTRUE(rep$pdf)) {
+  pdf_file <- sub("\\.html$", ".pdf", opt$output_html)
+
+  tryCatch({
+    rmarkdown::render(
+      input         = work_rmd,
+      output_format = "pdf_document",
+      output_file   = pdf_file,
+      output_dir    = getwd(),
+      params        = render_params,
+      envir         = new.env(),
+      quiet         = TRUE
+    )
+    pdf_done <- TRUE
+  }, error = function(e) {
+    message("AVERTISSEMENT : le rendu PDF a echoue : ", conditionMessage(e))
+  })
+}
 
 
 # ------------------------------------------------------------------------------
@@ -151,7 +185,11 @@ log_lines <- c("=== Module Rapport HTML ===",
                paste("Date :", Sys.time()),
                paste("Figures integrees :", n_fig),
                paste("Tables integrees :", n_csv),
-               paste("Sortie :", opt$output_html))
+               paste("Sortie HTML :", opt$output_html),
+               paste("Sortie PDF :",
+                     if (pdf_done) "generee"
+                     else if (isTRUE(rep$pdf)) "demandee mais echouee"
+                     else "non demandee"))
 writeLines(log_lines, opt$log)
 
 cat("Module Rapport termine.\n")

@@ -1,0 +1,30 @@
+% ==============================================================================
+% EN-TETE LATEX POUR LE RENDU PDF DU RAPPORT
+% ==============================================================================
+%
+% Ce fichier resout deux problemes propres au format PDF, sans effet sur le
+% rendu HTML qui ne l'utilise pas.
+%
+% 1. Debordement des figures. Les figures du pipeline sont produites en haute
+%    resolution avec des dimensions variables ; sans contrainte, LaTeX les
+%    insere a leur taille naturelle et elles depassent la page.
+%
+% 2. Flottement des figures. Par defaut, LaTeX deplace les figures vers la page
+%    suivante lorsqu'elles ne tiennent pas, ce qui les separe du texte qui les
+%    commente.
+% ==============================================================================
+
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage[export]{adjustbox}
+
+% Redefinition de includegraphics : toute image inseree est automatiquement
+% bornee a la largeur de la ligne et a 80 pourcent de la hauteur de page, en
+% preservant ses proportions. Le premier argument optionnel de l'appel
+% d'origine reste transmis, ce qui laisse la possibilite de surcharger ces
+% valeurs au cas par cas.
+\let\origincludegraphics\includegraphics
+\renewcommand{\includegraphics}[2][]{%
+  \origincludegraphics[max width=\linewidth,
+                       max height=0.8\textheight,
+                       keepaspectratio, #1]{#2}}

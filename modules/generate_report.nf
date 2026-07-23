@@ -24,6 +24,7 @@ process GENERATE_REPORT {
     tag "Generate_report"
 
     publishDir "${params.output_path}",      mode: 'copy', pattern: '*.html'
+    publishDir "${params.output_path}",      mode: 'copy', pattern: '*.pdf'
     publishDir "${params.output_path}/logs", mode: 'copy', pattern: '*.txt'
 
     input:
@@ -32,10 +33,17 @@ process GENERATE_REPORT {
     path logs             // tous les journaux de modules
     path config
     path template         // template RMarkdown parametrable
+    // L'en-tete LaTeX doit etre stage dans le repertoire de travail : le
+    // template le reference par son nom simple, et LaTeX le cherche a cote
+    // du document en cours de compilation.
+    path tex_header       // en-tete LaTeX pour le rendu PDF
     path script
 
     output:
     path "report.html",    emit: report
+    // optional true : le PDF peut ne pas etre demande, ou son rendu peut
+    // echouer sans que cela invalide l'execution du module.
+    path "report.pdf",     emit: pdf, optional: true
     path "report_log.txt", emit: log
 
     script:

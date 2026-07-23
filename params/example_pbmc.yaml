@@ -50,3 +50,4 @@ report:
   title: "Analyse single-cell RNA-seq : dataset PBMC 3k"
   author: "Romain KPAKOU"
   theme: "flatly"
+  pdf: true

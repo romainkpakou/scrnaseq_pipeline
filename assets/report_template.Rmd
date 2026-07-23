@@ -14,10 +14,31 @@ output:
     toc_depth: 3
     number_sections: true
     self_contained: true
+    fig_caption: true
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    latex_engine: xelatex
+    fig_caption: true
+    fig_width: 5
+    fig_height: 4
+    includes:
+      in_header: report_header.tex
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+# echo reste a FALSE : ce document presente des resultats, non du code.
+# Les options de dimensionnement ci-dessous sont sans effet en HTML mais
+# indispensables en PDF, ou elles empechent les figures de deborder de la page.
+knitr::opts_chunk$set(
+  echo       = FALSE,
+  warning    = FALSE,
+  message    = FALSE,
+  fig.align  = "center",
+  out.width  = "80%",
+  fig.pos    = "H"   # ancre la figure a sa position, sans flottement LaTeX
+)
 suppressPackageStartupMessages({
   library(yaml); library(knitr)
 })
@@ -228,6 +249,9 @@ fig("15_heatmap_top_markers.png")
 if (has("top_markers_by_cluster.csv")) {
   tm <- read.csv("top_markers_by_cluster.csv")
   tm3 <- do.call(rbind, lapply(split(tm, tm$cluster), function(d) head(d[order(-d$avg_log2FC), ], 3)))
+  # Les p-values ajustees atteignent des ordres de grandeur extremes. Leur
+  # notation scientifique abregee evite un debordement de colonne en PDF.
+  tm3$p_val_adj <- formatC(tm3$p_val_adj, format = "e", digits = 1)
   knitr::kable(tm3[, c("cluster", "gene", "avg_log2FC", "pct.1", "p_val_adj")],
                digits = 3, row.names = FALSE,
                caption = "Trois marqueurs les plus discriminants par cluster.")
@@ -342,8 +366,12 @@ flat <- function(x, prefix = "") {
   out
 }
 pf <- flat(cfg)
-knitr::kable(data.frame(Paramètre = names(pf), Valeur = unlist(pf), row.names = NULL),
-             caption = "Configuration complète de l'analyse.")
+vals <- unlist(pf)
+# Certaines valeurs, comme la liste des marqueurs canoniques, sont trop longues
+# pour tenir dans une colonne de PDF. Elles sont tronquees a l'affichage.
+vals <- ifelse(nchar(vals) > 60, paste0(substr(vals, 1, 57), "..."), vals)
+knitr::kable(data.frame(Paramètre = names(pf), Valeur = vals, row.names = NULL),
+             caption = "Configuration complète de l\'analyse.")
 ```
 
 ---
