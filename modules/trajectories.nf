@@ -1,4 +1,21 @@
+// =============================================================================
+// MODULE NEXTFLOW : TRAJECTOIRES CELLULAIRES
+// =============================================================================
+//
+// Encapsule bin/06_trajectories.R.
+//
+// Ce module est doublement conditionnel : il requiert que l'analyse de
+// trajectoire soit activee, mais aussi que l'annotation ait ete executee, car
+// la selection du compartiment d'interet s'appuie sur les identites
+// biologiques et non sur les numeros de cluster.
+//
+// L'objet emis est un SingleCellExperiment et non un objet Seurat : la
+// conversion est imposee par slingshot, qui appartient a l'ecosysteme
+// Bioconductor.
+// =============================================================================
+
 process TRAJECTORIES {
+
     tag "Trajectories"
 
     publishDir "${params.output_path}/figures", mode: 'copy', pattern: '*.png'
@@ -7,19 +24,20 @@ process TRAJECTORIES {
     publishDir "${params.output_path}/logs",    mode: 'copy', pattern: '*.txt'
 
     input:
-    path input_rds
+    path input_rds        // objet Seurat annote
     path config
+    path script
 
     output:
-    path "sce_slingshot.rds",       emit: rds
-    path "dynamic_genes.csv",       emit: dynamic
-    path "trajectory_summary.csv",  emit: summary
-    path "*.png",                   emit: figures
-    path "trajectories_log.txt",    emit: log
+    path "sce_slingshot.rds",      emit: rds
+    path "dynamic_genes.csv",      emit: dynamic
+    path "trajectory_summary.csv", emit: summary
+    path "*.png",                  emit: figures
+    path "trajectories_log.txt",   emit: log
 
     script:
     """
-    Rscript ${projectDir}/bin/06_trajectories.R \\
+    Rscript ${script} \\
         --input_rds ${input_rds} \\
         --config ${config} \\
         --output_rds sce_slingshot.rds \\

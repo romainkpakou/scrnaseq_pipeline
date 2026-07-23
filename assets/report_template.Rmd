@@ -1,0 +1,351 @@
+---
+title: "`r params$title`"
+author: "`r params$author`"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+params:
+  config: "config.yaml"
+  title: "Analyse single-cell RNA-seq"
+  author: "scrnaseq_pipeline"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: true
+    self_contained: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+suppressPackageStartupMessages({
+  library(yaml); library(knitr)
+})
+
+cfg <- yaml::read_yaml(params$config)
+
+# Helpers ------------------------------------------------------------------
+has <- function(f) file.exists(f)
+
+fig <- function(f, cap) {
+  if (has(f)) {
+    knitr::include_graphics(f)
+  } else {
+    invisible(NULL)
+  }
+}
+
+read_log <- function(f) if (has(f)) readLines(f) else character(0)
+
+# Extrait une valeur numerique d'un log via un motif
+log_val <- function(lines, pattern, default = NA) {
+  hit <- grep(pattern, lines, value = TRUE)
+  if (length(hit) == 0) return(default)
+  num <- regmatches(hit[1], regexpr("[0-9]+\\.?[0-9]*", sub(pattern, "", hit[1])))
+  if (length(num) == 0) return(default)
+  as.numeric(num)
+}
+
+# Extrait le texte apres un motif
+log_txt <- function(lines, pattern, default = "") {
+  hit <- grep(pattern, lines, value = TRUE)
+  if (length(hit) == 0) return(default)
+  trimws(sub(paste0(".*", pattern), "", hit[1]))
+}
+
+qc_log    <- read_log("qc_log.txt")
+pca_log   <- read_log("pca_log.txt")
+clust_log <- read_log("clustering_log.txt")
+mk_log    <- read_log("markers_log.txt")
+ann_log   <- read_log("annotation_log.txt")
+traj_log  <- read_log("trajectories_log.txt")
+
+n_before  <- log_val(qc_log, "Cellules avant filtrage :")
+n_after   <- log_val(qc_log, "Cellules apres filtrage :")
+pct_kept  <- if (!is.na(n_before) && !is.na(n_after)) round(100 * n_after / n_before, 1) else NA
+med_mt    <- log_val(qc_log, "Mediane percent.mt :")
+top_hvg   <- log_txt(qc_log, "Top 10 HVG :")
+
+n_pcs     <- cfg$pca$n_pcs_selected
+n_clust   <- log_val(clust_log, "Nombre de clusters :")
+n_markers <- log_val(mk_log, "Marqueurs identifies :")
+
+fmt <- function(x, d = 0) if (is.na(x)) "n/a" else format(round(x, d), big.mark = " ", scientific = FALSE)
+```
+
+# Résumé
+
+Ce rapport présente une analyse de transcriptomique unicellulaire conduite par le pipeline
+`scrnaseq_pipeline`. L'objectif est de caractériser la diversité cellulaire de l'échantillon,
+d'identifier les principales populations par leur signature transcriptomique, et, lorsque
+l'analyse le permet, de reconstruire une trajectoire de différentiation.
+
+Le flux de travail couvre l'ensemble des étapes : contrôle qualité, normalisation, réduction
+de dimensionnalité, clustering non supervisé, annotation cellulaire par marqueurs canoniques,
+et analyse pseudotemporelle. L'analyse retient **`r fmt(n_after)` cellules** et identifie
+**`r fmt(n_clust)` populations cellulaires distinctes**.
+
+# Matériel et méthodes
+
+## Jeu de données
+
+Projet : **`r cfg$project_name`**. Espèce : **`r cfg$species`**.
+La matrice de comptage brute contient `r fmt(n_before)` codes-barres cellulaires.
+
+## Environnement analytique
+
+L'analyse est exécutée par un pipeline **Nextflow DSL2** orchestrant des scripts R
+paramétrables. Les principaux outils sont Seurat pour le contrôle qualité, la normalisation,
+la réduction de dimensionnalité, le clustering et l'identification des marqueurs, et
+Slingshot pour l'analyse de trajectoire.
+
+Le code source et l'environnement reproductible sont disponibles publiquement :
+<https://github.com/romainkpakou/scrnaseq_pipeline>.
+
+# Contrôle qualité et normalisation
+
+Toute analyse single-cell débute par une étape critique de contrôle qualité. Les technologies
+de capture cellulaire génèrent inévitablement une fraction de mesures artefactuelles :
+gouttelettes vides, doublets, cellules en apoptose. Cette phase de filtrage conditionne la
+qualité de l'ensemble des analyses en aval.
+
+Trois métriques ont été calculées pour chaque cellule : le nombre total de transcrits détectés,
+le nombre de gènes uniques exprimés, et le pourcentage de transcrits mitochondriaux, marqueur
+classique de stress cellulaire.
+
+```{r qc-before, fig.cap="Distribution des métriques de qualité par cellule avant filtrage."}
+fig("01_qc_violin_before.png")
+```
+
+```{r qc-scatter, fig.cap="Corrélations entre métriques de qualité."}
+fig("02_qc_scatter.png")
+```
+
+## Critères de filtrage
+
+Les seuils appliqués sont les suivants :
+
+- `r cfg$qc$min_features` < nFeature_RNA < `r cfg$qc$max_features` : exclusion des cellules
+  pauvres en transcrits et des doublets.
+- percent.mt < `r cfg$qc$max_mt_percent` % : exclusion des cellules à signature apoptotique.
+
+```{r qc-after, fig.cap="Distribution des métriques après application des filtres."}
+fig("03_qc_violin_after.png")
+```
+
+Après filtrage, **`r fmt(n_after)` cellules** sont conservées, soit **`r pct_kept` %** du jeu
+de données initial. La médiane de transcrits mitochondriaux s'établit à **`r med_mt` %**.
+
+## Normalisation et gènes hautement variables
+
+L'expression est normalisée par la méthode `r cfg$normalization$method` avec un facteur
+d'échelle de `r fmt(cfg$normalization$scale_factor)`, puis transformée en logarithme. La
+sélection retient **`r fmt(cfg$normalization$n_hvg)` gènes hautement variables** par la méthode
+de stabilisation de variance.
+
+```{r hvg, fig.cap="Identification des gènes hautement variables."}
+fig("04_hvg_plot.png")
+```
+
+Les dix gènes les plus variables identifiés sont : *`r top_hvg`*.
+
+# Réduction de dimensionnalité et clustering
+
+## Analyse en composantes principales
+
+Une analyse en composantes principales est appliquée pour extraire un espace de représentation
+compact capturant l'essentiel de la variance biologique. Le calcul produit
+`r cfg$pca$n_dims` composantes.
+
+```{r pca-dim, fig.cap="Projection des cellules sur les deux premières composantes principales."}
+fig("05_pca_dimplot.png")
+```
+
+```{r pca-load, fig.cap="Gènes contribuant le plus aux deux premières composantes."}
+fig("06_pca_loadings.png")
+```
+
+```{r pca-heat, fig.cap="Cartes thermiques des premières composantes principales."}
+fig("07_pca_heatmap.png")
+```
+
+## Sélection du nombre de composantes
+
+Le choix du nombre de composantes est un compromis entre le risque de perdre du signal
+biologique et celui d'introduire du bruit technique. Le graphique du coude représente la
+variance expliquée par chaque composante par ordre décroissant ; le point d'inflexion indique
+la limite au-delà de laquelle chaque composante additionnelle apporte peu d'information.
+
+```{r elbow, fig.cap="Variance expliquée par les composantes principales."}
+fig("08_elbow_plot.png")
+```
+
+```{r jackstraw, fig.cap="Test JackStraw : significativité statistique des composantes.", eval=has("09_jackstraw_plot.png")}
+fig("09_jackstraw_plot.png")
+```
+
+**`r n_pcs` composantes principales** ont été retenues pour la suite de l'analyse.
+
+## Clustering non supervisé
+
+L'identification des populations repose sur un clustering non supervisé en deux temps :
+construction d'un graphe de voisinage entre cellules dans l'espace des composantes retenues,
+puis partitionnement de ce graphe par l'algorithme de Louvain, qui optimise une mesure de
+modularité pour identifier des communautés densément connectées.
+
+À la résolution **`r cfg$clustering$resolution`**, le partitionnement produit
+**`r fmt(n_clust)` clusters**.
+
+```{r umap, fig.cap="Projection UMAP colorée selon les clusters identifiés."}
+fig("10_umap_clusters.png")
+```
+
+## Validation par marqueurs canoniques
+
+Avant l'annotation formelle, la cohérence biologique du clustering est vérifiée en visualisant
+l'expression de marqueurs canoniques établis dans la littérature.
+
+```{r markers-umap, fig.cap="Expression des marqueurs canoniques projetée sur l'UMAP."}
+fig("12_umap_canonical_markers.png")
+```
+
+# Marqueurs différentiels
+
+Pour caractériser chaque cluster, une analyse d'expression différentielle a été conduite selon
+le test de `r cfg$markers$test_use`, comparant l'expression de chaque gène dans un cluster donné
+à celle observée dans les autres clusters. Un total de **`r fmt(n_markers)` gènes
+différentiellement exprimés** a été identifié.
+
+```{r dotplot, fig.cap="Expression des marqueurs les plus discriminants par cluster."}
+fig("13_dotplot_canonical.png")
+```
+
+```{r heatmap-mk, fig.cap="Carte thermique des marqueurs les plus spécifiques de chaque cluster."}
+fig("15_heatmap_top_markers.png")
+```
+
+```{r top-markers-table}
+if (has("top_markers_by_cluster.csv")) {
+  tm <- read.csv("top_markers_by_cluster.csv")
+  tm3 <- do.call(rbind, lapply(split(tm, tm$cluster), function(d) head(d[order(-d$avg_log2FC), ], 3)))
+  knitr::kable(tm3[, c("cluster", "gene", "avg_log2FC", "pct.1", "p_val_adj")],
+               digits = 3, row.names = FALSE,
+               caption = "Trois marqueurs les plus discriminants par cluster.")
+}
+```
+
+```{r annotation-section, eval=has("annotation_summary.csv"), results='asis'}
+cat("# Annotation cellulaire\n\n")
+cat("L'attribution d'une identité biologique à chaque cluster repose sur un score de module ",
+    "calculé pour chaque type cellulaire de la base de marqueurs canoniques. Ce score compare ",
+    "l'expression des marqueurs d'un type à celle d'un ensemble de gènes témoins de niveau ",
+    "d'expression comparable, ce qui neutralise le biais des gènes fortement exprimés. Chaque ",
+    "cluster reçoit l'identité dont le score est maximal, sous réserve de dépasser un seuil de ",
+    "confiance.\n\n")
+```
+
+```{r annot-table, eval=has("annotation_summary.csv")}
+if (has("annotation_summary.csv")) {
+  as_df <- read.csv("annotation_summary.csv")
+  knitr::kable(as_df, col.names = c("Type cellulaire", "Cellules", "Fréquence (%)"),
+               caption = "Répartition des types cellulaires identifiés.")
+}
+```
+
+```{r annot-umap, fig.cap="Projection UMAP avec les identités cellulaires annotées.", eval=has("17_umap_publication.png")}
+fig("17_umap_publication.png")
+```
+
+```{r annot-dot, fig.cap="Expression des marqueurs canoniques par type cellulaire annoté.", eval=has("18_dotplot_annotated.png")}
+fig("18_dotplot_annotated.png")
+```
+
+```{r traj-section, eval=has("trajectory_summary.csv"), results='asis'}
+cat("# Analyse de trajectoire cellulaire\n\n")
+cat("Au-delà de l'identification statique des types cellulaires, la transcriptomique ",
+    "unicellulaire permet de reconstruire des dynamiques de différentiation. L'hypothèse ",
+    "fondatrice est que les cellules capturées à un instant donné représentent un continuum ",
+    "d'états, correspondant à des trajectoires que l'on peut reconstruire in silico.\n\n")
+cat("L'analyse a été restreinte aux types cellulaires partageant une origine développementale ",
+    "commune, afin d'éviter les lignages artefactuels que produirait une reconstruction non ",
+    "contrainte sur l'ensemble des populations.\n\n")
+```
+
+```{r traj-table, eval=has("trajectory_summary.csv")}
+if (has("trajectory_summary.csv")) {
+  ts <- read.csv("trajectory_summary.csv")
+  knitr::kable(ts, col.names = c("Métrique", "Valeur"),
+               caption = "Synthèse de la reconstruction pseudotemporelle.")
+}
+```
+
+```{r traj-lineage, eval=length(traj_log) > 0, results='asis'}
+lin <- grep("Lineage", traj_log, value = TRUE)
+if (length(lin) > 0) {
+  cat("Lignage(s) reconstruit(s) :\n\n")
+  for (l in lin) cat("- ", trimws(l), "\n", sep = "")
+  cat("\n")
+}
+```
+
+```{r traj-pt, fig.cap="Trajectoire colorée par pseudotemps.", eval=has("21_umap_subset_pseudotime.png")}
+fig("21_umap_subset_pseudotime.png")
+```
+
+```{r traj-curve, fig.cap="Courbe de trajectoire ajustée, cellules colorées par type.", eval=has("22_umap_subset_trajectories.png")}
+fig("22_umap_subset_trajectories.png")
+```
+
+```{r dyn-section, eval=has("dynamic_genes.csv"), results='asis'}
+cat("## Programmes moléculaires dynamiques\n\n")
+cat("Une fois la trajectoire établie, il devient possible d'identifier les gènes dont ",
+    "l'expression évolue le long du pseudotemps. Un coefficient de corrélation de Spearman a ",
+    "été calculé entre l'expression de chaque gène et le pseudotemps.\n\n")
+```
+
+```{r dyn-table, eval=has("dynamic_genes.csv")}
+if (has("dynamic_genes.csv")) {
+  dg <- read.csv("dynamic_genes.csv")
+  dg <- dg[order(-dg$spearman), ]
+  top_up <- head(dg, 10); top_dn <- tail(dg, 10)
+  comb <- data.frame(
+    `Gene croissant` = top_up$gene, `Correlation +` = round(top_up$spearman, 3),
+    `Gene decroissant` = rev(top_dn$gene), `Correlation -` = round(rev(top_dn$spearman), 3),
+    check.names = FALSE)
+  knitr::kable(comb, caption = "Dix gènes les plus corrélés positivement et négativement au pseudotemps.")
+}
+```
+
+```{r dyn-heat, fig.cap="Carte thermique des gènes les plus dynamiques, cellules ordonnées par pseudotemps croissant. L'intensité de la couleur reflète le niveau d'expression.", eval=has("24_heatmap_dynamic_genes.png")}
+fig("24_heatmap_dynamic_genes.png")
+```
+
+# Reproductibilité
+
+L'ensemble de cette analyse a été produite par le pipeline `scrnaseq_pipeline`, orchestré par
+Nextflow DSL2. Chaque étape est encapsulée dans un module indépendant appelant un script R
+paramétrable, et l'ensemble des paramètres est centralisé dans un fichier de configuration
+unique. Cette architecture garantit qu'une même configuration appliquée aux mêmes données
+produit exactement les mêmes résultats.
+
+## Paramètres de l'analyse
+
+```{r params-table}
+flat <- function(x, prefix = "") {
+  out <- list()
+  for (n in names(x)) {
+    v <- x[[n]]
+    key <- if (prefix == "") n else paste0(prefix, ".", n)
+    if (is.list(v)) out <- c(out, flat(v, key))
+    else out[[key]] <- paste(v, collapse = ", ")
+  }
+  out
+}
+pf <- flat(cfg)
+knitr::kable(data.frame(Paramètre = names(pf), Valeur = unlist(pf), row.names = NULL),
+             caption = "Configuration complète de l'analyse.")
+```
+
+---
+
+*Rapport généré automatiquement par le pipeline scrnaseq_pipeline.*

@@ -1,0 +1,19 @@
+name: scrnaseq_pipeline
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base=4.3.3
+  - r-seurat=5.5.1
+  - r-ggplot2
+  - r-patchwork
+  - r-dplyr
+  - r-yaml
+  - r-optparse
+  - r-rmarkdown
+  - r-knitr
+  - bioconductor-slingshot=2.10.0
+  - bioconductor-singlecellexperiment
+  - bioconductor-summarizedexperiment
+  - bioconductor-delayedmatrixstats
+  - pandoc

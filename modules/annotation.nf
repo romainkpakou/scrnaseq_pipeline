@@ -1,4 +1,21 @@
+// =============================================================================
+// MODULE NEXTFLOW : ANNOTATION CELLULAIRE AUTOMATISEE
+// =============================================================================
+//
+// Encapsule bin/05_annotation.R.
+//
+// Particularite : ce process recoit une entree supplementaire, la base de
+// marqueurs canoniques. Celle-ci doit imperativement etre declaree en entree
+// plutot que referencee par un chemin absolu dans la commande : le process
+// s'execute dans un repertoire isole ou seuls les fichiers explicitement
+// declares sont mis a disposition.
+//
+// Ce module est conditionnel : le workflow ne l'invoque que si l'annotation
+// est activee dans la configuration.
+// =============================================================================
+
 process ANNOTATION {
+
     tag "Annotation"
 
     publishDir "${params.output_path}/figures", mode: 'copy', pattern: '*.png'
@@ -7,19 +24,20 @@ process ANNOTATION {
     publishDir "${params.output_path}/logs",    mode: 'copy', pattern: '*.txt'
 
     input:
-    path input_rds
+    path input_rds        // objet Seurat avec clusters
     path config
-    path markers_db          // la base de marqueurs, stagee dans le work dir
+    path markers_db       // base de marqueurs canoniques au format YAML
+    path script
 
     output:
-    path "pbmc_annotated.rds",       emit: rds
-    path "annotation_summary.csv",   emit: summary
-    path "*.png",                    emit: figures
-    path "annotation_log.txt",       emit: log
+    path "pbmc_annotated.rds",     emit: rds
+    path "annotation_summary.csv", emit: summary
+    path "*.png",                  emit: figures
+    path "annotation_log.txt",     emit: log
 
     script:
     """
-    Rscript ${projectDir}/bin/05_annotation.R \\
+    Rscript ${script} \\
         --input_rds ${input_rds} \\
         --config ${config} \\
         --markers_db ${markers_db} \\

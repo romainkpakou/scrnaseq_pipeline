@@ -45,3 +45,8 @@ trajectories:
   start_cluster: "CD4 T naive"
   n_top_dynamic_genes: 30
   min_pct_expressed: 0.10
+
+report:
+  title: "Analyse single-cell RNA-seq : dataset PBMC 3k"
+  author: "Romain KPAKOU"
+  theme: "flatly"
