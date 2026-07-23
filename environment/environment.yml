@@ -1,19 +1,50 @@
+# ==============================================================================
+# ENVIRONNEMENT CONDA : scrnaseq_pipeline
+# ==============================================================================
+#
+# Les versions sont exprimees en planchers minimaux plutot qu'en valeurs
+# exactes. Raison : les paquets Conda et CRAN d'une meme bibliotheque sont
+# compiles avec des contraintes differentes, et l'appariement entre versions de
+# R et de Bioconductor rend toute combinaison figee rapidement insoluble.
+#
+# Le pipeline requiert les API de Seurat 5 et de Slingshot 2, non des numeros
+# de correctif specifiques. Les planchers ci-dessous garantissent la
+# compatibilite fonctionnelle tout en laissant le solveur choisir un ensemble
+# coherent.
+#
+# Creation :
+#   conda env create -f environment/environment.yml
+#   conda activate scrnaseq_pipeline
+# ==============================================================================
+
 name: scrnaseq_pipeline
+
 channels:
   - conda-forge
   - bioconda
+
 dependencies:
-  - r-base=4.3.3
-  - r-seurat=5.5.1
-  - r-ggplot2
-  - r-patchwork
-  - r-dplyr
-  - r-yaml
-  - r-optparse
-  - r-rmarkdown
-  - r-knitr
-  - bioconductor-slingshot=2.10.0
+  # Socle R. Version non figee : elle est determinee par les contraintes de
+  # compilation de Seurat et de Bioconductor.
+  - r-base>=4.3
+
+  # Ecosysteme single-cell
+  - r-seurat>=5.0
+  - bioconductor-slingshot>=2.10
   - bioconductor-singlecellexperiment
   - bioconductor-summarizedexperiment
   - bioconductor-delayedmatrixstats
+
+  # Manipulation de donnees et interface en ligne de commande
+  - r-dplyr
+  - r-yaml
+  - r-optparse
+
+  # Figures
+  - r-ggplot2
+  - r-patchwork
+
+  # Generation du rapport
+  - r-rmarkdown
+  - r-knitr
   - pandoc

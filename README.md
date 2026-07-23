@@ -73,6 +73,27 @@ comparaison a une analyse Seurat et Slingshot menee manuellement :
 | Lignage lymphocytaire T | 1 451 cellules, 1 lignage | 1 451 cellules, 1 lignage |
 | Pseudotemps median | 14,22 | 14,22 |
 
+## Demarrage rapide
+
+    # 1. Cloner le depot
+    git clone https://github.com/romainkpakou/scrnaseq_pipeline.git
+    cd scrnaseq_pipeline
+
+    # 2. Installer l'environnement
+    conda env create -f environment/environment.yml
+    conda activate scrnaseq_pipeline
+
+    # 3. Telecharger le jeu de donnees de demonstration (PBMC 3k, 7 Mo)
+    bash bin/download_test_data.sh
+
+    # 4. Lancer l'analyse
+    nextflow run main.nf -profile conda \
+        --config params/example_pbmc.yaml \
+        --input_path data/raw/pbmc3k/hg19 \
+        --output_path results
+
+Le rapport consolide est produit dans `results/report.html`.
+
 ## Utilisation
 
     nextflow run main.nf \

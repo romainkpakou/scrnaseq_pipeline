@@ -105,3 +105,22 @@ Un cluster annote Unknown
   Consulter les scores detailles dans results/logs/annotation_log.txt. Deux
   causes possibles : la base de marqueurs ne couvre pas ce type cellulaire, ou
   le cluster correspond a un etat inattendu meritant une inspection manuelle.
+
+## Jeu de donnees de demonstration
+
+Un script recupere le jeu de donnees PBMC 3k de 10X Genomics, qui sert de
+reference de validation au pipeline :
+
+    bash bin/download_test_data.sh
+
+Les donnees sont placees dans `data/raw/pbmc3k/hg19`, emplacement attendu par la
+configuration d'exemple. Volume telecharge : environ 7 Mo.
+
+L'analyse de ce jeu de donnees doit reproduire les metriques annoncees dans le
+README : 2638 cellules retenues, 9 clusters, 3446 marqueurs differentiels et un
+lignage lymphocytaire T unique. Tout ecart signale un probleme d'installation.
+
+## Base de marqueurs canoniques
+
+Le format du fichier de marqueurs et les regles d'adaptation a un nouveau tissu
+sont decrits dans [markers_database.md](markers_database.md).

@@ -10,3 +10,4 @@ data/raw/
 .Rhistory
 .RData
 .DS_Store
+results_conda/
