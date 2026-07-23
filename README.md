@@ -59,6 +59,12 @@ donnees traite.
 modification de code invalide le cache du module concerne et de ses dependants,
 ce qui rend la reprise par `-resume` sure durant le developpement.
 
+## Exemple de sortie
+
+Un rapport complet genere sur le jeu de donnees de demonstration est disponible
+dans [examples/report_pbmc3k.pdf](examples/report_pbmc3k.pdf). Il illustre le
+rendu du pipeline sans qu'il soit necessaire de l'executer.
+
 ## Validation
 
 Le pipeline a ete valide sur le jeu de donnees **PBMC 3k** de 10X Genomics par
