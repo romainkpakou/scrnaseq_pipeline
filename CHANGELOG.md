@@ -4,6 +4,19 @@ Toutes les evolutions notables de ce projet sont documentees dans ce fichier.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) et le
 versionnage respecte [SemVer](https://semver.org/lang/fr/).
 
+## [0.2.2] : 2026-07-23
+
+### Ajoute
+- Sortie PDF optionnelle du rapport, activee par le drapeau `report.pdf` de la
+  configuration d'analyse. Le format PDF n'est pas produit systematiquement :
+  sa generation allonge l'execution et requiert une distribution LaTeX.
+- `assets/report_header.tex` : en-tete LaTeX bornant les figures a la largeur
+  et a la hauteur de page, et ancrant leur position dans le flux du texte.
+
+### Corrige
+- Mise en forme des p-values ajustees et des valeurs de configuration dans les
+  tableaux, afin d'eviter tout debordement de colonne au format PDF.
+
 ## [0.2.1] : 2026-07-23
 
 ### Corrige
