@@ -4,6 +4,28 @@ Toutes les evolutions notables de ce projet sont documentees dans ce fichier.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) et le
 versionnage respecte [SemVer](https://semver.org/lang/fr/).
 
+## [0.2.1] : 2026-07-23
+
+### Corrige
+- `environment/environment.yml` etait insoluble : la version `r-base=4.3.3`
+  entrait en conflit avec le paquet Conda `r-seurat=5.5.1`, compile contre
+  R 4.4 ou superieur. Les versions exactes ont ete remplacees par des planchers
+  minimaux, le pipeline requerant les API de Seurat 5 et Slingshot 2 et non des
+  numeros de correctif specifiques.
+
+### Ajoute
+- `bin/download_test_data.sh` : recuperation du jeu de donnees de demonstration
+  PBMC 3k depuis 10X Genomics
+- `docs/markers_database.md` : format du fichier de marqueurs canoniques et
+  regles d'adaptation a un nouveau tissu ou une nouvelle espece
+- Section de demarrage rapide dans le README, couvrant le parcours complet du
+  clonage a l'execution
+
+### Valide
+Execution complete du pipeline sous le profil `conda`. Les metriques de
+reference sont reproduites a l'identique, y compris les scores d'annotation a
+trois decimales pres.
+
 ## [0.2.0] : 2026-07-23
 
 ### Ajoute
