@@ -96,10 +96,13 @@ Le rapport consolide est produit dans `results/report.html`.
 
 ## Utilisation
 
-    nextflow run main.nf \
+    nextflow run main.nf -profile conda \
         --config params/example_pbmc.yaml \
         --input_path data/raw/pbmc3k/hg19 \
         --output_path results
+
+Le profil `conda` garantit l'environnement reproductible. Sans lui, le pipeline
+utilise le R du systeme, qui doit alors fournir toutes les dependances.
 
 Consulter [docs/usage.md](docs/usage.md) pour les prerequis, les profils
 d'execution (Conda, SLURM) et la resolution des problemes courants.

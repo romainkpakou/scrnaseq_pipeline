@@ -89,23 +89,6 @@ L'analyse de trajectoire depend de l'annotation, car elle selectionne les
 populations d'interet par leur nom biologique. Desactiver l'annotation desactive
 donc necessairement les trajectoires.
 
-## Resolution des problemes courants
-
-pandoc version 1.12.3 or higher is required
-  pandoc est absent du PATH. Une session RStudio le fournit implicitement, ce
-  qui n'est pas le cas d'une execution en ligne de commande.
-  Correctif : sudo apt install pandoc, ou utiliser le profil conda.
-
-aucun package nomme 'slingshot'
-  Dependance Bioconductor manquante.
-  Correctif : BiocManager::install(c("slingshot", "DelayedMatrixStats"))
-
-Un cluster annote Unknown
-  Aucun type de la base n'atteint le seuil de confiance pour ce cluster.
-  Consulter les scores detailles dans results/logs/annotation_log.txt. Deux
-  causes possibles : la base de marqueurs ne couvre pas ce type cellulaire, ou
-  le cluster correspond a un etat inattendu meritant une inspection manuelle.
-
 ## Jeu de donnees de demonstration
 
 Un script recupere le jeu de donnees PBMC 3k de 10X Genomics, qui sert de
@@ -124,3 +107,20 @@ lignage lymphocytaire T unique. Tout ecart signale un probleme d'installation.
 
 Le format du fichier de marqueurs et les regles d'adaptation a un nouveau tissu
 sont decrits dans [markers_database.md](markers_database.md).
+
+## Resolution des problemes courants
+
+pandoc version 1.12.3 or higher is required
+  pandoc est absent du PATH. Une session RStudio le fournit implicitement, ce
+  qui n'est pas le cas d'une execution en ligne de commande.
+  Correctif : sudo apt install pandoc, ou utiliser le profil conda.
+
+aucun package nomme 'slingshot'
+  Dependance Bioconductor manquante.
+  Correctif : BiocManager::install(c("slingshot", "DelayedMatrixStats"))
+
+Un cluster annote Unknown
+  Aucun type de la base n'atteint le seuil de confiance pour ce cluster.
+  Consulter les scores detailles dans results/logs/annotation_log.txt. Deux
+  causes possibles : la base de marqueurs ne couvre pas ce type cellulaire, ou
+  le cluster correspond a un etat inattendu meritant une inspection manuelle.
